@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("EF-Projectors")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Facilitates creation of composable expressions for data projections.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Solutionhead Technologies, LLC")]
 [assembly: AssemblyProduct("EF-Projectors")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
