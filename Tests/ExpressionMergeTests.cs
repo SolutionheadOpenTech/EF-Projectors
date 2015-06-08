@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using EF_Projectors;
 using EF_Projectors.Extensions;
+using LinqKit;
 using NUnit.Framework;
 
 namespace Tests
@@ -126,6 +128,74 @@ namespace Tests
             Assert.AreEqual(childInt, result.TestResultModelChild.IntResult);
         }
 
+        [Test]
+        public void Complex_case()
+        {
+            var select = new Projectors<Order, OrderReturn>
+                {
+                    o => new OrderReturn
+                        {
+                            DateCreated = o.DateCreated
+                        },
+                    {
+                        new Projectors<PickedInventory, PickedInventoryReturn>
+                            {
+                                p => new PickedInventoryReturn
+                                    {
+                                        Key = new PickedInventoryKeyReturn
+                                            {
+                                                DateCreated = p.DateCreated,
+                                                Sequence = p.DateSequence
+                                            }
+                                    },
+                                p => new PickedInventoryReturn
+                                    {
+                                        Items = p.Items.Select(i => new PickedInventoryItemReturn
+                                            {
+                                                Quantity = i.Quantity
+                                            })
+                                    }
+                            },
+                        s => o => new OrderReturn
+                            {
+                                Detail = new DetailReturn
+                                    {
+                                        PickedInventory = s.Invoke(o.PickedInventory)
+                                    }
+                            }
+                    }
+                };
+
+            var merged = select.Merge();
+            Assert.IsNotNull(merged);
+            var compiled = merged.Compile();
+            Assert.IsNotNull(compiled);
+
+            var items = new List<Order>
+                {
+                    new Order
+                        {
+                            PickedInventory = new PickedInventory
+                                {
+                                    DateCreated = DateTime.Now,
+                                    DateSequence = 3,
+                                    Items = new List<PickedInventoryItem>
+                                        {
+                                            new PickedInventoryItem
+                                                {
+                                                    Quantity = 42
+                                                }
+                                        }
+                                }
+                        }
+                };
+
+            var results = items.Select(compiled).ToList();
+            var firstItem = items.First();
+            var firstResult = results.First();
+            Assert.AreEqual(firstItem.PickedInventory.DateCreated, firstResult.Detail.PickedInventory.Key.DateCreated);
+        }
+
         private Expression<Func<TestDataModelChild, TestResultModelChild>> ProjectString()
         {
             return d => new TestResultModelChild
@@ -206,6 +276,58 @@ namespace Tests
             public string ParentStringResult { get; set; }
 
             public TestResultModelChild TestResultModelChild { get; set; }
+        }
+
+        public class Order
+        {
+            public DateTime DateCreated { get; set; }
+            public int DateSequence { get; set; }
+            public PickedInventory PickedInventory { get; set; }
+        }
+
+        public class PickedInventory
+        {
+            public DateTime DateCreated { get; set; }
+            public int DateSequence { get; set; }
+            public ICollection<PickedInventoryItem> Items { get; set; }
+        }
+
+        public class PickedInventoryItem
+        {
+            public DateTime DateCreated { get; set; }
+            public int DateSequence { get; set; }
+            public int Sequence { get; set; }
+            public int Quantity { get; set; }
+            public PickedInventory PickedInventory { get; set; }
+        }
+
+        public class OrderReturn
+        {
+            public DateTime DateCreated { get; set; }
+            public int Sequence { get; set; }
+            public DetailReturn Detail { get; set; }
+        }
+
+        public class DetailReturn
+        {
+            public PickedInventoryReturn PickedInventory { get; set; }
+        }
+
+        public class PickedInventoryReturn
+        {
+            public PickedInventoryKeyReturn Key { get; set; }
+            public IEnumerable<PickedInventoryItemReturn> Items { get; set; }
+        }
+
+        public class PickedInventoryKeyReturn
+        {
+            public DateTime DateCreated { get; set; }
+            public int Sequence { get; set; }
+        }
+
+        public class PickedInventoryItemReturn
+        {
+            public int Quantity { get; set; }
         }
 
         #endregion

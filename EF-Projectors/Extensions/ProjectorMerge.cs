@@ -70,12 +70,12 @@ namespace EF_Projectors.Extensions
 
         public static Expression<Func<TSource, TDest>> Merge<TSource, TDest>(this IEnumerable<Expression<Func<TSource, TDest>>> projectors)
         {
-            return projectors == null ? null : MergeOnProjectorVisitor.MergeOrReplace(projectors.ToArray());
+            return projectors == null ? null : MergeOrReplaceVisitor.MergeOrReplace(projectors.ToArray());
         }
 
         public static Expression<Func<TSource, TDest>> Merge<TSource, TDest>(params Expression<Func<TSource, TDest>>[] projectors)
         {
-            return MergeOnProjectorVisitor.MergeOrReplace(projectors);
+            return MergeOrReplaceVisitor.MergeOrReplace(projectors);
         }
     }
 }

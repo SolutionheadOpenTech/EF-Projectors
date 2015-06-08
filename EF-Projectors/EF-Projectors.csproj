@@ -55,10 +55,10 @@
     <Compile Include="Projectors.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Visitors\GetFirstMemberInitLambdaVisitor.cs" />
-    <Compile Include="Visitors\MergeOnProjectorVisitor.cs" />
+    <Compile Include="Visitors\MergeProjectorVisitor.cs" />
     <Compile Include="Visitors\MutateProjectorReturnVisitor.cs" />
     <Compile Include="Visitors\MutateProjectorSingleParameterVisitor.cs" />
-    <Compile Include="Visitors\ReplaceParametersVisitor.cs" />
+    <Compile Include="Visitors\MergeLambdaParametersVisitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

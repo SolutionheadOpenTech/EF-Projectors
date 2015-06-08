@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace EF_Projectors.Visitors
 {
-    internal class MergeOnProjectorVisitor : ExpressionVisitor
+    internal class MergeOrReplaceVisitor : ExpressionVisitor
     {
         internal static T MergeOrReplace<T>(params T[] expressions)
             where T : Expression
@@ -15,50 +15,65 @@ namespace EF_Projectors.Visitors
             }
             
             T rootExpression = null;
-            LambdaExpression rootProjector = null;
-            var otherProjectors = new List<LambdaExpression>();
+            Expression targetExpression = null;
+            LambdaExpression targetProjector = null;
+            var otherExpressions = new List<Expression>();
             foreach(var expression in expressions)
             {
-                if(rootProjector == null)
+                if(rootExpression == null)
                 {
-                    rootProjector = GetFirstMemberInitLambdaVisitor.Get(null, rootExpression = expression);
+                    rootExpression = expression;
+                    targetProjector = GetFirstMemberInitLambdaVisitor.Get(null, rootExpression);
+                    targetExpression = targetProjector != null ? targetProjector.Body : rootExpression;
                 }
                 else
                 {
-                    var other = GetFirstMemberInitLambdaVisitor.Get(rootProjector.Body.Type, expression);
-                    if(other != null)
+                    Expression otherExpression = null;
+                    if(targetProjector != null)
                     {
-                        otherProjectors.Add(ReplaceParametersVisitor.MergeLambdaParameters(other, rootProjector));
+                        var otherProjector = GetFirstMemberInitLambdaVisitor.Get(targetExpression.Type, expression);
+                        if(otherProjector != null)
+                        {
+                            otherExpression = MergeLambdaParametersVisitor.MergeLambdaParameters(otherProjector, targetProjector).Body;
+                        }
+                    }
+                    else
+                    {
+                        otherExpression = GetFirstMemberInitVisitor.Get(targetExpression.Type, expression);
+                    }
+
+                    if(otherExpression != null)
+                    {
+                        otherExpressions.Add(otherExpression);
                     }
                 }
             }
 
-            if(!otherProjectors.Any())
+            if(!otherExpressions.Any())
             {
                 return expressions.LastOrDefault();
             }
 
-            return (T) new MergeOnProjectorVisitor(rootProjector, otherProjectors).Visit(rootExpression);
+            return (T) new MergeOrReplaceVisitor(targetExpression, otherExpressions).Visit(rootExpression);
         }
 
-        private readonly LambdaExpression _firstProjector;
-        private readonly List<LambdaExpression> _otherProjectors;
+        private readonly Expression _firstProjector;
+        private readonly List<Expression> _otherProjectors;
 
-        private MergeOnProjectorVisitor(LambdaExpression firstProjector, List<LambdaExpression> otherProjectors)
+        private MergeOrReplaceVisitor(Expression firstProjector, List<Expression> otherProjectors)
         {
             _firstProjector = firstProjector;
             _otherProjectors = otherProjectors;
         }
 
-        protected override Expression VisitLambda<T>(Expression<T> node)
+        protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             if(node == _firstProjector)
             {
-                var mergedMemberInit = _otherProjectors.Aggregate((MemberInitExpression)_firstProjector.Body, (c, o) => MergeMemberInits(c, o.Body as MemberInitExpression));
-                return Expression.Lambda<T>(mergedMemberInit, _firstProjector.Parameters);
+                var merged = _otherProjectors.Aggregate((MemberInitExpression)_firstProjector, (c, o) => MergeMemberInits(c, (MemberInitExpression)o));
+                return merged;
             }
-
-            return base.VisitLambda<T>(node);
+            return base.VisitMemberInit(node);
         }
 
         private static MemberInitExpression MergeMemberInits(MemberInitExpression source, MemberInitExpression other)
