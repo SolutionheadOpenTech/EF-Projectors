@@ -54,15 +54,17 @@
     <Compile Include="Projector.cs" />
     <Compile Include="Projectors.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Visitors\GetFirstMemberInitLambdaVisitor.cs" />
-    <Compile Include="Visitors\MergeProjectorVisitor.cs" />
+    <Compile Include="Visitors\ExpressionList.cs" />
+    <Compile Include="Visitors\ExpressionMergeVisitor.cs" />
     <Compile Include="Visitors\MutateProjectorReturnVisitor.cs" />
     <Compile Include="Visitors\MutateProjectorSingleParameterVisitor.cs" />
     <Compile Include="Visitors\MergeLambdaParametersVisitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
